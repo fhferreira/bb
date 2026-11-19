@@ -5866,6 +5866,7 @@ export type ExperimentalSettingsSection =
   | "projects"
   | "machines"
   | "mobile"
+  | "devices"
   | "environment-variables"
   | "updates"
   | "plugins"
