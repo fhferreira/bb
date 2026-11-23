@@ -86,7 +86,14 @@ import {
   codexRateLimitReadResponseSchema,
 } from "../schemas.js";
 import {
+  CODEX_APP_SERVER_ARGS_ENV,
+  CODEX_APP_SERVER_COMMAND_ENV,
+  CODEX_POOL_AUTH_TOKEN_ENV,
+  CODEX_POOL_BASE_URL_ENV,
+  codexWorkspaceNetworkConfigSchema,
+  codexWorkspaceNetworkRequirementsSchema,
   resolveCodexInstructionOverrides,
+  resolveCodexWorkspaceNetworkAccess,
   toCodexDynamicTools,
   toCodexPermissionSettings,
   toCodexServiceTier,
@@ -303,11 +310,6 @@ function sendRuntimeRequest(
   return responsePromise;
 }
 
-const CODEX_APP_SERVER_COMMAND_ENV = "BB_CODEX_BRIDGE_APP_SERVER_COMMAND";
-const CODEX_APP_SERVER_ARGS_ENV = "BB_CODEX_BRIDGE_APP_SERVER_ARGS";
-const CODEX_POOL_BASE_URL_ENV = "CODEX_OPENAI_BASE_URL";
-const CODEX_POOL_AUTH_TOKEN_ENV = "CODEX_POOL_AUTH_TOKEN";
-
 const CODEX_INITIALIZE_PARAMS = {
   clientInfo: { name: "bb", version: "1.0.0", title: null },
   capabilities: { experimentalApi: true },
@@ -467,6 +469,7 @@ interface CodexBridgeSession {
   constructionSignature: string;
   environmentHash: string;
   turnPermissionSettings: ReturnType<typeof toCodexPermissionSettings>;
+  workspaceNetworkAccess: boolean;
   openCodexTurnIds: Set<string>;
   responseOpenedTurns: Map<string, ResponseOpenedTurn>;
   unopenedCompactionDispatches: PendingCompactionDispatch[];
@@ -1144,6 +1147,31 @@ async function initializeChild(
   return version !== null && compareVersions(version, "0.145.0") >= 0;
 }
 
+async function readCodexWorkspaceNetworkAccess(
+  connection: CodexAppServerConnection,
+  cwd: string,
+): Promise<boolean> {
+  try {
+    const [config, requirements] = await Promise.all([
+      connection.request({
+        method: "config/read",
+        params: { cwd },
+        resultSchema: codexWorkspaceNetworkConfigSchema,
+        timeoutMs: CHILD_REQUEST_TIMEOUT_MS,
+      }),
+      connection.request({
+        method: "configRequirements/read",
+        resultSchema: codexWorkspaceNetworkRequirementsSchema,
+        timeoutMs: CHILD_REQUEST_TIMEOUT_MS,
+      }),
+    ]);
+    return resolveCodexWorkspaceNetworkAccess({ config, requirements });
+  } catch (error) {
+    if (!(error instanceof CodexAppServerRpcError)) throw error;
+    return false;
+  }
+}
+
 const codexThreadIdentityResultSchema = z
   .object({
     modelProvider: z.string().optional(),
@@ -1377,7 +1405,9 @@ async function constructThreadSession(
       additionalWorkspaceWriteRoots: decoded.additionalWorkspaceWriteRoots,
       gitWritableRoots: [],
       options: decoded.sessionOptions,
+      workspaceNetworkAccess: false,
     }),
+    workspaceNetworkAccess: false,
     openCodexTurnIds: new Set(),
     pendingChildRequests: new Map(),
     responseOpenedTurns: new Map(),
@@ -1448,6 +1478,10 @@ async function constructThreadSession(
 
   try {
     const supportsAgentsEnabled = await initializeChild(connection);
+    session.workspaceNetworkAccess = await readCodexWorkspaceNetworkAccess(
+      connection,
+      args.cwd,
+    );
 
     const preparedGitRoots = translator.prepareWorkspaceWriteGitRoots({
       supportsAgentsEnabled,
@@ -1564,6 +1598,7 @@ async function constructThreadSession(
       additionalWorkspaceWriteRoots: decoded.additionalWorkspaceWriteRoots,
       gitWritableRoots: translator.getThreadGitWritableRoots(args.threadId),
       options: decoded.sessionOptions,
+      workspaceNetworkAccess: session.workspaceNetworkAccess,
     });
     announceSessionIdentity(session, codexThreadId);
     session.daybreakEnabled = result.thread.daybreakEnabled ?? null;
@@ -1634,6 +1669,7 @@ function registerResumableSession(session: CodexBridgeSession): void {
     constructionSignature: session.constructionSignature,
     environmentHash: session.environmentHash,
     turnPermissionSettings: session.turnPermissionSettings,
+    workspaceNetworkAccess: session.workspaceNetworkAccess,
     openCodexTurnIds: new Set(),
     pendingChildRequests: new Map(),
     responseOpenedTurns: new Map(),
@@ -2228,6 +2264,7 @@ async function handleTurnStart(
           params.threadId,
         ),
         options: decoded.sessionOptions,
+        workspaceNetworkAccess: session.workspaceNetworkAccess,
       });
       const cyberAccessProgram = await resolveTurnCyberAccessProgram(
         session,
@@ -2311,6 +2348,7 @@ async function handleTurnSteer(
         params.threadId,
       ),
       options: decoded.sessionOptions,
+      workspaceNetworkAccess: session.workspaceNetworkAccess,
     });
     if (
       !isDeepStrictEqual(session.turnPermissionSettings, permissionSettings)

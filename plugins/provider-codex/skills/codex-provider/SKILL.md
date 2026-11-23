@@ -64,6 +64,19 @@ tool approvals, `{"action":"accept","content":{...}}` for forms,
 `{"action":"decline"}` / `{"action":"cancel"}`. Invalid responses never grant
 access. Stopping the turn answers the request with `cancel`.
 
+Workspace-scoped Codex turns get network access by default, so commands can
+reach the bb server and the bb CLI works. Codex's own configuration overrides
+that default. If any Codex config layer (user, project, managed, or `-c`) sets
+`sandbox_workspace_write.network_access`, bb uses that value. If
+`requirements.toml` or MDM requirements manage permission profiles or the
+network, bb uses Codex's value, which is off unless configured. If bb cannot
+read Codex's configuration, network access is off. Thread environment
+variables reach commands through `shell_environment_policy.set`, which Codex
+applies after `exclude`. The app-server launch variables
+(`CODEX_OPENAI_BASE_URL`, `CODEX_POOL_AUTH_TOKEN`) are not set there. Commands
+inherit them only through the normal `shell_environment_policy`, so `exclude`
+can remove them.
+
 Unlisted model IDs are accepted by this provider; acceptance does not establish
 account access. Inspect models on the actual execution host with
 `bb provider models codex` using the machine or environment selector.

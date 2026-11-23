@@ -19,6 +19,9 @@ import {
   resolveCodexInstructionOverrides,
   toCodexDynamicTools,
   toCodexPermissionSettings,
+  codexWorkspaceNetworkConfigSchema,
+  codexWorkspaceNetworkRequirementsSchema,
+  resolveCodexWorkspaceNetworkAccess,
   toCodexServiceTier,
   toCodexThreadPermissionSettings,
   toCodexUserInput,
@@ -446,6 +449,7 @@ function permissionSettings(
     additionalWorkspaceWriteRoots,
     gitWritableRoots: [],
     options,
+    workspaceNetworkAccess: true,
   });
 }
 
@@ -513,6 +517,17 @@ describe("codex permission settings", () => {
         "/repo/.git/logs",
       ],
     });
+  });
+
+  it("carries the resolved workspace network access into the sandbox policy", () => {
+    expect(
+      toCodexPermissionSettings({
+        additionalWorkspaceWriteRoots: [],
+        gitWritableRoots: [],
+        options: WORKSPACE_ASK_OPTIONS,
+        workspaceNetworkAccess: false,
+      }).sandboxPolicy,
+    ).toMatchObject({ type: "workspaceWrite", networkAccess: false });
   });
 
   it("maps auto to automatic workspace review", () => {
@@ -599,6 +614,27 @@ describe("buildCodexConfig", () => {
     });
   });
 
+  it("keeps app-server launch credentials out of the command environment", () => {
+    const config = configFor({
+      ...FULL_OPTIONS,
+      envVars: {
+        BB_ACCOUNT_POOL_PARENT_URL: "http://127.0.0.1:3334/pool",
+        CODEX_OPENAI_BASE_URL: "http://127.0.0.1:3334/pool/v1",
+        CODEX_POOL_AUTH_TOKEN: "hub-token",
+      },
+    });
+
+    expect(config).toHaveProperty(
+      "shell_environment_policy.set.BB_ACCOUNT_POOL_PARENT_URL",
+    );
+    expect(config).not.toHaveProperty(
+      "shell_environment_policy.set.CODEX_OPENAI_BASE_URL",
+    );
+    expect(config).not.toHaveProperty(
+      "shell_environment_policy.set.CODEX_POOL_AUTH_TOKEN",
+    );
+  });
+
   it("maps the reasoning level onto model_reasoning_effort", () => {
     expect(
       configFor({ ...FULL_OPTIONS, reasoningLevel: "high" }),
@@ -629,6 +665,74 @@ describe("buildCodexConfig", () => {
         options: FULL_OPTIONS,
       }),
     );
+  });
+});
+
+const userNetworkOrigin = {
+  "sandbox_workspace_write.network_access": {
+    name: { type: "user", file: "/home/user/.codex/config.toml" },
+  },
+};
+
+describe("resolveCodexWorkspaceNetworkAccess", () => {
+  it.each([
+    {
+      name: "defaults to network access when Codex config leaves it unset",
+      config: { config: {}, origins: {} },
+      requirements: { requirements: null },
+      expected: true,
+    },
+    {
+      name: "keeps network off when Codex config turns it off",
+      config: {
+        config: { sandbox_workspace_write: { network_access: false } },
+        origins: userNetworkOrigin,
+      },
+      requirements: { requirements: null },
+      expected: false,
+    },
+    {
+      name: "keeps network on when Codex config turns it on",
+      config: {
+        config: { sandbox_workspace_write: { network_access: true } },
+        origins: userNetworkOrigin,
+      },
+      requirements: { requirements: null },
+      expected: true,
+    },
+    {
+      name: "uses Codex's default when admin requirements manage permission profiles",
+      config: { config: {}, origins: {} },
+      requirements: {
+        requirements: {
+          defaultPermissions: "sandboxed",
+          allowedPermissionProfiles: { sandboxed: true },
+        },
+      },
+      expected: false,
+    },
+    {
+      name: "uses Codex's default when admin requirements manage the network",
+      config: { config: {}, origins: {} },
+      requirements: { requirements: { network: { enabled: false } } },
+      expected: false,
+    },
+    {
+      name: "ignores requirements that do not manage permissions",
+      config: { config: {}, origins: {} },
+      requirements: {
+        requirements: { allowedSandboxModes: ["workspace-write"] },
+      },
+      expected: true,
+    },
+  ])("$name", ({ config, requirements, expected }) => {
+    expect(
+      resolveCodexWorkspaceNetworkAccess({
+        config: codexWorkspaceNetworkConfigSchema.parse(config),
+        requirements:
+          codexWorkspaceNetworkRequirementsSchema.parse(requirements),
+      }),
+    ).toBe(expected);
   });
 });
 
