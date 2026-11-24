@@ -1,8 +1,11 @@
+import { Suspense } from "react";
 import type { ExperimentalThreadInfoProps } from "@get-bb/plugin-sdk";
 import { PluginSlotMount } from "@/components/plugin/PluginSlotMount";
 import { compareGroupedPlacement } from "@/lib/grouped-placement";
 import { usePluginSlotKind, type PluginSlotSnapshot } from "@/lib/plugin-slots";
 import { InfoSectionCollapseIdContext } from "./useInfoSectionCollapse";
+
+const PENDING_ENTRY = <span data-thread-info-pending="" hidden />;
 
 type ThreadInfoRegistration =
   | PluginSlotSnapshot["threadInfoRows"][number]
@@ -31,7 +34,9 @@ export function ThreadInfoRows(props: ExperimentalThreadInfoProps) {
         instanceId={props.threadId}
         crashFallback={null}
       >
-        <Component {...props} />
+        <Suspense fallback={PENDING_ENTRY}>
+          <Component {...props} />
+        </Suspense>
       </PluginSlotMount>
     ),
   );
@@ -52,7 +57,9 @@ export function ThreadInfoSections(props: ExperimentalThreadInfoProps) {
           instanceId={props.threadId}
           crashFallback={null}
         >
-          <Component {...props} />
+          <Suspense fallback={PENDING_ENTRY}>
+            <Component {...props} />
+          </Suspense>
         </PluginSlotMount>
       </InfoSectionCollapseIdContext.Provider>
     ),
