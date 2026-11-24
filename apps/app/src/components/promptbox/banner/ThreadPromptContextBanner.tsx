@@ -798,65 +798,65 @@ function ReadOnlyContextBanner({
     <>
       {observers}
       <PromptStackCard
-      ariaLabel="Thread history"
-      className="overflow-hidden"
-      style={{ minHeight: PROMPT_STACK_CARD_ROW_HEIGHT }}
-    >
-      <div
-        className={cn(
-          "flex items-center gap-0.5 text-xs text-muted-foreground",
-          PROMPT_STACK_INLAY_INSET_CLASS,
-        )}
+        ariaLabel="Thread history"
+        className="overflow-hidden"
+        style={{ minHeight: PROMPT_STACK_CARD_ROW_HEIGHT }}
       >
-        {parentSegment("summary")}
-        {description === null ? (
-          <div
-            className={cn(
-              "flex min-w-0 items-center gap-1.5 text-xs",
-              PROMPT_STACK_INLAY_SEGMENT_CLASS,
-            )}
-            role="status"
-            aria-label={statusLabel}
-          >
-            {statusIcon}
-            <span className="min-w-0 truncate" aria-hidden="true">
-              {statusLabel}
-            </span>
-          </div>
-        ) : (
-          <SectionToggleButton
-            buttonRef={statusFocus.triggerRef}
-            fillRow
-            id={SECTION_IDS.status.toggle}
-            controlsId={SECTION_IDS.status.body}
-            icon={statusIcon}
-            label={statusLabel}
-            hideLabelInCompact={false}
-            isExpanded={isStatusExpanded}
-            onToggle={statusFocus.onTriggerClick}
-          />
-        )}
-        {showStatusAction ? (
-          <BannerActionSlot>{statusAction}</BannerActionSlot>
-        ) : null}
-      </div>
-      {description === null ? null : (
-        <AnimatedDisclosureBody
-          collapsedBorder="reserve"
-          id={SECTION_IDS.status.body}
-          labelledBy={SECTION_IDS.status.toggle}
-          isExpanded={isStatusExpanded}
-          collapseLabel={`Collapse ${statusLabel.toLowerCase()}`}
-          collapseRef={statusFocus.collapseRef}
-          onCollapse={statusFocus.onCollapseClick}
+        <div
+          className={cn(
+            "flex items-center gap-0.5 text-xs text-muted-foreground",
+            PROMPT_STACK_INLAY_INSET_CLASS,
+          )}
         >
-          <p className="px-3 pb-2 pt-1.5 text-xs leading-relaxed text-muted-foreground">
-            {description}
-          </p>
-        </AnimatedDisclosureBody>
-      )}
-      {parentSegment("details")}
-    </PromptStackCard>
+          {parentSegment("summary")}
+          {description === null ? (
+            <div
+              className={cn(
+                "flex min-w-0 items-center gap-1.5 text-xs",
+                PROMPT_STACK_INLAY_SEGMENT_CLASS,
+              )}
+              role="status"
+              aria-label={statusLabel}
+            >
+              {statusIcon}
+              <span className="min-w-0 truncate" aria-hidden="true">
+                {statusLabel}
+              </span>
+            </div>
+          ) : (
+            <SectionToggleButton
+              buttonRef={statusFocus.triggerRef}
+              fillRow
+              id={SECTION_IDS.status.toggle}
+              controlsId={SECTION_IDS.status.body}
+              icon={statusIcon}
+              label={statusLabel}
+              hideLabelInCompact={false}
+              isExpanded={isStatusExpanded}
+              onToggle={statusFocus.onTriggerClick}
+            />
+          )}
+          {showStatusAction ? (
+            <BannerActionSlot>{statusAction}</BannerActionSlot>
+          ) : null}
+        </div>
+        {description === null ? null : (
+          <AnimatedDisclosureBody
+            collapsedBorder="reserve"
+            id={SECTION_IDS.status.body}
+            labelledBy={SECTION_IDS.status.toggle}
+            isExpanded={isStatusExpanded}
+            collapseLabel={`Collapse ${statusLabel.toLowerCase()}`}
+            collapseRef={statusFocus.collapseRef}
+            onCollapse={statusFocus.onCollapseClick}
+          >
+            <p className="px-3 pb-2 pt-1.5 text-xs leading-relaxed text-muted-foreground">
+              {description}
+            </p>
+          </AnimatedDisclosureBody>
+        )}
+        {parentSegment("details")}
+      </PromptStackCard>
     </>
   );
 }

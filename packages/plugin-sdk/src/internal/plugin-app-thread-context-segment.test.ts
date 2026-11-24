@@ -27,7 +27,10 @@ function collect(contextKinds: unknown) {
 it.each([
   [undefined, ["banner", "card"]],
   [["banner"], ["banner"]],
-  [["card", "banner", "card"], ["banner", "card"]],
+  [
+    ["card", "banner", "card"],
+    ["banner", "card"],
+  ],
 ])("collects segment context kinds %j as %j", (input, expected) => {
   expect(collect(input)).toEqual([expected]);
 });
@@ -35,6 +38,8 @@ it.each([
 it.each([[[]], [["sidebar"]], ["banner"]])(
   "rejects segment context kinds %j",
   (input) => {
-    expect(() => collect(input)).toThrow(/"contextKinds" must be a non-empty array/);
+    expect(() => collect(input)).toThrow(
+      /"contextKinds" must be a non-empty array/,
+    );
   },
 );

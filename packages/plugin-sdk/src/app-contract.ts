@@ -1760,6 +1760,16 @@ export type PluginBrowserBbSdk = Omit<BbSdkAreas, "threads"> & {
 };
 
 /** Props for {@link PluginSdkApp.ThreadTitle}. */
+/**
+ * The fields {@link PluginSdkApp.experimental_threadDisplayTitle} reads. A
+ * {@link PluginSidebarThread} and an {@link ExperimentalThread} both fit.
+ */
+export interface ExperimentalThreadDisplayTitleInput {
+  id: string;
+  title: string | null;
+  titleFallback: string | null;
+}
+
 export interface PluginThreadTitleProps {
   /** A thread in the sidebar's live view; renders nothing for an unknown id. */
   threadId: string;
@@ -2419,12 +2429,11 @@ export type ExperimentalThreadContextKind = "banner" | "card";
  * `experimental_threadInfoRow`. Render one or more
  * `experimental_ThreadContextCardRow` elements, or null to show nothing for
  * this thread. bb draws the card and places it, and mounts rows only in panes
- * whose thread context kind is `card`. The card is behind the "Thread context
- * card" experiment, off by default, and never shows on a phone (a compact
- * viewport with a coarse pointer); every other pane uses the `banner` kind, so
- * register an `experimental_threadContextSegment` or
- * `experimental_threadInfoRow` as well to reach it. A crash removes only this
- * row for that thread.
+ * whose thread context kind is `card`. The card never shows on a phone (a
+ * compact viewport with a coarse pointer) or for a thread shown inside a
+ * panel, so register an `experimental_threadContextSegment` or
+ * `experimental_threadInfoRow` as well to reach those. A crash removes only
+ * this row for that thread.
  */
 export interface ExperimentalThreadContextCardRowRegistration {
   /** Unique within the plugin; letters, digits, `-`, `_`. */
@@ -2449,8 +2458,8 @@ export interface ExperimentalThreadContextCardRowRegistration {
  * divider above it. Sections start open; bb remembers the ones the person folds
  * by `pluginId/id` across threads and restarts. While folded, the component
  * stays mounted and the `experimental_InfoSection` children unmount. Like
- * card rows, sections mount only where the card shows: behind the "Thread
- * context card" experiment, off by default, and never on a phone. A crash
+ * card rows, sections mount only where the card shows: never on a phone or
+ * for a thread shown inside a panel. A crash
  * removes only this section for that thread.
  */
 export interface ExperimentalThreadContextCardSectionRegistration {
@@ -6252,9 +6261,9 @@ export interface PluginSdkApp {
   /**
    * How the thread pane the calling component renders in shows its thread
    * context (see {@link ExperimentalThreadContextKind}); `banner` outside a
-   * thread pane. A context segment whose content is also a thread context card
-   * row or section hides itself in `useVisible` while this is `card`; other
-   * segments keep showing above the composer.
+   * thread pane. To keep a context segment out of `card` panes, list
+   * `contextKinds: ["banner"]` on its registration instead of reading this in
+   * `useVisible`. Read it to draw differently by kind.
    * Experimental: see docs/api_to_audit.md.
    */
   experimental_useThreadContextKind(): ExperimentalThreadContextKind;
@@ -6630,6 +6639,16 @@ export interface PluginSdkApp {
   experimental_resolveThreadStatus(
     input: PluginThreadStatusInput,
   ): PluginThreadStatus;
+  /**
+   * The title bb shows for a thread, before mentions resolve: `title`, else
+   * `titleFallback`, else `Thread ` and the id's first 8 characters. Pass it
+   * to `experimental_ThreadTitleText` to draw mention chips, or to
+   * `experimental_useThreadTitleDisplayText` for plain text. A pure function,
+   * not a hook. Experimental: see docs/api_to_audit.md.
+   */
+  experimental_threadDisplayTitle(
+    thread: ExperimentalThreadDisplayTitleInput,
+  ): string;
   /**
    * Every `experimental_threadRowMetadata` contribution for one thread row (see
    * {@link ExperimentalThreadRowMetadataRegistration}), the items bb's sidebar

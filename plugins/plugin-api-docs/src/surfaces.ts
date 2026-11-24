@@ -752,6 +752,8 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
           "experimental_PluginIcon",
           "experimental_ThreadTitleText",
           "experimental_useThreadTitleDisplayText",
+          "experimental_threadDisplayTitle",
+          "ExperimentalThreadDisplayTitleInput",
         ],
         firstParty: ["Composer"],
         experimental: true,

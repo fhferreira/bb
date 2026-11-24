@@ -1,5 +1,6 @@
 import {
   experimental_THREAD_INFO_SECTION_GROUPS,
+  experimental_threadDisplayTitle,
   type ExperimentalThreadContextCardProps,
   type PluginSidebarThread,
 } from "@get-bb/plugin-sdk";
@@ -18,16 +19,6 @@ import {
 } from "@get-bb/plugin-sdk/app";
 import { Icon } from "@bb/shared-ui/icon";
 import { InfoRowTime } from "@bb/shared-ui/info-list-row";
-
-function rawDisplayTitle(thread: PluginSidebarThread): string {
-  if (thread.title !== null && thread.title.trim().length > 0) {
-    return thread.title;
-  }
-  if (thread.titleFallback !== null && thread.titleFallback.trim().length > 0) {
-    return thread.titleFallback;
-  }
-  return `Thread ${thread.id.slice(0, 8)}`;
-}
 
 function ChildThreadGlyph({ thread }: { thread: PluginSidebarThread }) {
   const { hasUnsubmittedDraft } = useSidebarThreadDraft(thread.id);
@@ -52,7 +43,7 @@ function ChildThreadGlyph({ thread }: { thread: PluginSidebarThread }) {
 
 function ChildThreadRow({ thread }: { thread: PluginSidebarThread }) {
   const navigate = useBbNavigate();
-  const title = rawDisplayTitle(thread);
+  const title = experimental_threadDisplayTitle(thread);
   return (
     <li className="list-none">
       <ThreadContextCardRow

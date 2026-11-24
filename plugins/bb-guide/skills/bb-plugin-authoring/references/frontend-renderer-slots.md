@@ -103,7 +103,9 @@ Original }`. `experimental_fullFileContents` is either
   `experimental_ShortcutHint`, `experimental_ImageLightbox`,
   `experimental_PromptMentionIcon`, `experimental_PluginIcon`,
   `experimental_ThreadTitleText` (`inline` flows the title inside a sentence),
-  plus `experimental_useThreadTitleDisplayText`.
+  plus `experimental_useThreadTitleDisplayText`. `experimental_threadDisplayTitle(thread)`
+  (pure, also on the root `@get-bb/plugin-sdk` entry) gives the title to pass
+  them: `title`, else `titleFallback`, else `Thread <id prefix>`.
 
   ```tsx
   app.slots.experimental_composer({

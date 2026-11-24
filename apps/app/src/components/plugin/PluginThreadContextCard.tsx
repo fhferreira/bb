@@ -115,7 +115,9 @@ export function ThreadContextCardProvider({
         projectId,
         environment: environmentId === null ? null : { id: environmentId },
       },
-      rows: enabled ? sortByPlacement([...coreRows, ...threadContextCardRows]) : [],
+      rows: enabled
+        ? sortByPlacement([...coreRows, ...threadContextCardRows])
+        : [],
       sections: enabled
         ? sortByPlacement([...coreSections, ...threadContextCardSections])
         : [],

@@ -1,7 +1,7 @@
 import {
   experimental_THREAD_CONTEXT_SEGMENT_GROUPS,
   experimental_THREAD_INFO_ROW_GROUPS,
-  type ExperimentalThread,
+  experimental_threadDisplayTitle,
   type ExperimentalThreadContextCardProps,
   type ExperimentalThreadContextSegmentProps,
 } from "@get-bb/plugin-sdk";
@@ -50,16 +50,6 @@ const BODY_ID = "thread-prompt-banner-parent-thread-body";
 
 const TITLE_CLASS = "text-foreground/90 underline underline-offset-2";
 
-function rawDisplayTitle(thread: ExperimentalThread): string {
-  if (thread.title !== null && thread.title.trim().length > 0) {
-    return thread.title;
-  }
-  if (thread.titleFallback !== null && thread.titleFallback.trim().length > 0) {
-    return thread.titleFallback;
-  }
-  return `Thread ${thread.id.slice(0, 8)}`;
-}
-
 function useParentThread(threadId: string): ParentThread | null {
   const { thread } = useThread(threadId);
   const relationship: Relationship =
@@ -82,7 +72,7 @@ function useParentThread(threadId: string): ParentThread | null {
   }
   return {
     threadId: relatedThreadId,
-    title: rawDisplayTitle(related),
+    title: experimental_threadDisplayTitle(related),
     relationship,
   };
 }
@@ -96,11 +86,7 @@ function ParentThreadLink({ parent }: { parent: ParentThread }) {
   const navigate = useBbNavigate();
   return (
     <a href={navigate.experimental_threadHref(parent.threadId)}>
-      <ThreadTitleText
-        title={parent.title}
-        className={TITLE_CLASS}
-        inline
-      />
+      <ThreadTitleText title={parent.title} className={TITLE_CLASS} inline />
     </a>
   );
 }
