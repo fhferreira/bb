@@ -1,4 +1,5 @@
 import { coreTabs } from "@/components/secondary-panel/thread-info-registration";
+import coreMessageActions from "@/core-contributions/message-actions";
 import coreMessageTime from "@/core-contributions/message-time";
 import { collectCoreContributionSlots } from "@/lib/core-contributions";
 import { setAppIcons } from "@bb/shared-ui/icon-registry";
@@ -58,6 +59,10 @@ import {
 const coreMessageMetadata = collectCoreContributionSlots(
   coreMessageTime,
   "messageMetadata",
+);
+const coreMessageActionSlots = collectCoreContributionSlots(
+  coreMessageActions,
+  "messageActions",
 );
 
 export interface PluginRegistrationSet {
@@ -283,7 +288,7 @@ export const EMPTY_PLUGIN_SLOT_SNAPSHOT: PluginSlotSnapshot = {
   composers: [],
   messageDirectives: [],
   codeFenceRenderers: [],
-  messageActions: [],
+  messageActions: coreMessageActionSlots,
   messageMetadata: coreMessageMetadata,
   commandPaletteActions: [],
   providerIcons: [],
@@ -464,6 +469,9 @@ function collectKind<K extends SlotKind>(
   }
   if (kind === "messageMetadata") {
     for (const slot of coreMessageMetadata) collected.push(slot);
+  }
+  if (kind === "messageActions") {
+    for (const slot of coreMessageActionSlots) collected.push(slot);
   }
   for (const pluginId of pluginIds) {
     const flattened = flattenedByPluginId.get(pluginId);
