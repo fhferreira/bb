@@ -102,7 +102,8 @@ Original }`. `experimental_fullFileContents` is either
   `experimental_VoiceRecordingBar`, `experimental_FailedVoiceRecordings`,
   `experimental_ShortcutHint`, `experimental_ImageLightbox`,
   `experimental_PromptMentionIcon`, `experimental_PluginIcon`,
-  `experimental_ThreadTitleText`, plus `experimental_useThreadTitleDisplayText`.
+  `experimental_ThreadTitleText` (`inline` flows the title inside a sentence),
+  plus `experimental_useThreadTitleDisplayText`.
 
   ```tsx
   app.slots.experimental_composer({

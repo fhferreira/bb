@@ -85,6 +85,7 @@ export function registerGitSegmentFixture(): void {
           title: "Changed files",
           group: experimental_THREAD_CONTEXT_SEGMENT_GROUPS.git,
           order: 10,
+          contextKinds: ["banner"],
           summary: fixtureChangedFilesPart("summary"),
           action: fixtureChangedFilesPart("action"),
           details: fixtureChangedFilesPart("details"),

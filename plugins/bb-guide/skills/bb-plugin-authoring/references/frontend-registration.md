@@ -211,9 +211,9 @@ below it. Props carry `threadId`, `projectId`, `environment` (null without a
 usable environment), the visible `segments` as `{ key, pluginId }` in row
 order (`key` is `<pluginId>/<id>`; bb's own use `bb--core`), `isExpanded`/
 `onToggle` (one segment is expanded at a time) and `toggleRef`/`collapseRef`
-(bb moves focus between them). `useVisible(input)` false leaves it out. Focus
-handoff, related-thread data, and hiding while the pane shows the context card
-(`experimental_useThreadContextKind()`): frontend-thread-context-card.md.
+(bb moves focus between them). `useVisible(input)` false leaves it out, and
+`contextKinds: ["banner"]` leaves it out of panes that show the context card. Focus
+handoff, related-thread data, and the card: frontend-thread-context-card.md.
 
 ### An action in every thread menu
 

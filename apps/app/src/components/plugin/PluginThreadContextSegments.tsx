@@ -17,14 +17,7 @@ import {
   type PluginThreadContextSegmentSlot,
 } from "@/lib/plugin-slots";
 import { PluginSlotMount } from "./PluginSlotMount";
-import type { CoreContributionSlot } from "@/lib/core-contributions";
-
-export type CoreThreadContextSegment =
-  CoreContributionSlot<"threadContextSegments">;
-
-export type ThreadContextSegmentEntry =
-  | { owner: "core"; slot: CoreThreadContextSegment }
-  | { owner: "plugin"; slot: PluginThreadContextSegmentSlot };
+import { useThreadContextKind } from "./thread-context-card-pane";
 
 export type ThreadContextSegmentPart = "summary" | "action" | "details";
 
@@ -36,19 +29,14 @@ export function threadContextSegmentKey(segment: {
 }
 
 function sortThreadContextSegments(
-  entries: readonly ThreadContextSegmentEntry[],
-): ThreadContextSegmentEntry[] {
-  return entries
-    .map((entry, index) => ({ entry, index }))
+  slots: readonly PluginThreadContextSegmentSlot[],
+): PluginThreadContextSegmentSlot[] {
+  return slots
+    .map((slot, index) => ({ slot, index }))
     .sort((left, right) =>
-      compareGroupedPlacement(
-        left.entry.slot,
-        left.index,
-        right.entry.slot,
-        right.index,
-      ),
+      compareGroupedPlacement(left.slot, left.index, right.slot, right.index),
     )
-    .map(({ entry }) => entry);
+    .map(({ slot }) => slot);
 }
 
 type VisibilityReport = (
@@ -132,24 +120,22 @@ function Visibility({
   return <host.Visibility input={input} onVisible={onVisible} />;
 }
 
-function entryKey(entry: ThreadContextSegmentEntry, threadId: string): string {
-  const generation = entry.owner === "plugin" ? entry.slot.generation : 0;
-  return `${threadContextSegmentKey(entry.slot)}/${generation}/${threadId}`;
+function slotKey(
+  slot: PluginThreadContextSegmentSlot,
+  threadId: string,
+): string {
+  return `${threadContextSegmentKey(slot)}/${slot.generation}/${threadId}`;
 }
 
 function VisibilityObserver({
-  entry,
+  slot,
   input,
   onVisible,
 }: {
-  entry: ThreadContextSegmentEntry;
+  slot: PluginThreadContextSegmentSlot;
   input: ExperimentalThreadContextSegmentInput;
   onVisible: VisibilityReport;
 }) {
-  if (entry.owner === "core") {
-    return <Visibility slot={entry.slot} input={input} onVisible={onVisible} />;
-  }
-  const { slot } = entry;
   return (
     <PluginSlotMount
       pluginId={slot.pluginId}
@@ -168,19 +154,27 @@ function VisibilityObserver({
 
 export function useThreadContextSegments(
   input: ExperimentalThreadContextSegmentInput,
-  core: readonly CoreThreadContextSegment[],
+  core: readonly PluginThreadContextSegmentSlot[],
 ): {
-  entries: readonly ThreadContextSegmentEntry[];
+  slots: readonly PluginThreadContextSegmentSlot[];
   observers: ReactNode;
 } {
-  const threadContextSegments = usePluginSlotKind("threadContextSegments");
-  const entries = sortThreadContextSegments([
-    ...core.map((slot) => ({ owner: "core" as const, slot })),
-    ...threadContextSegments.map((slot) => ({
-      owner: "plugin" as const,
-      slot,
-    })),
-  ]);
+  const pluginSlots = usePluginSlotKind("threadContextSegments");
+  return useVisibleThreadContextSegments(
+    input,
+    sortThreadContextSegments([...core, ...pluginSlots]),
+  );
+}
+
+export function useVisibleThreadContextSegments(
+  input: ExperimentalThreadContextSegmentInput,
+  candidates: readonly PluginThreadContextSegmentSlot[],
+): {
+  slots: readonly PluginThreadContextSegmentSlot[];
+  observers: ReactNode;
+} {
+  const kind = useThreadContextKind();
+  const placed = candidates.filter((slot) => slot.contextKinds.includes(kind));
   const [visibility, setVisibility] = useState<
     ReadonlyMap<
       ExperimentalThreadContextSegmentRegistration,
@@ -212,17 +206,17 @@ export function useThreadContextSegments(
   );
   const { threadId } = input;
   return {
-    entries: entries.filter(({ slot }) => {
+    slots: placed.filter((slot) => {
       if (slot.useVisible === undefined) return true;
       const reported = visibility.get(slot);
       return reported?.threadId === threadId && reported.visible;
     }),
-    observers: entries
-      .filter(({ slot }) => slot.useVisible !== undefined)
-      .map((entry) => (
+    observers: placed
+      .filter((slot) => slot.useVisible !== undefined)
+      .map((slot) => (
         <VisibilityObserver
-          key={entryKey(entry, threadId)}
-          entry={entry}
+          key={slotKey(slot, threadId)}
+          slot={slot}
           input={input}
           onVisible={onVisible}
         />
@@ -316,17 +310,15 @@ export function useThreadContextSegmentDisclosure(
 }
 
 export function ThreadContextSegmentMount({
-  entry,
+  slot,
   part,
   ...props
 }: ExperimentalThreadContextSegmentProps & {
-  entry: ThreadContextSegmentEntry;
+  slot: PluginThreadContextSegmentSlot;
   part: ThreadContextSegmentPart;
 }) {
-  const Content = entry.slot[part];
+  const Content = slot[part];
   if (Content === undefined) return null;
-  if (entry.owner === "core") return <Content {...props} />;
-  const { slot } = entry;
   return (
     <PluginSlotMount
       pluginId={slot.pluginId}
@@ -348,9 +340,9 @@ export function ThreadContextSegmentMount({
 }
 
 export function threadContextSegmentMountKey(
-  entry: ThreadContextSegmentEntry,
+  slot: PluginThreadContextSegmentSlot,
   threadId: string,
   part: ThreadContextSegmentPart,
 ): string {
-  return `${entryKey(entry, threadId)}/${part}`;
+  return `${slotKey(slot, threadId)}/${part}`;
 }

@@ -63,16 +63,18 @@ function DeploysSection({ threadId }: ExperimentalThreadContextCardProps) {
 ```
 
 Context segments keep showing in both kinds. A plugin whose segment shows the
-same content as its card row hides the segment while the pane shows the card,
-with `experimental_useThreadContextKind()`:
+same content as its card row lists `contextKinds: ["banner"]` (omitted means
+both kinds); bb leaves the segment out of panes of other kinds and does not run
+its `useVisible` there. bb's parent thread, Git and GitHub PR Status segments
+do the same:
 
 ```tsx
 app.slots.experimental_threadContextSegment({
   id: "deploy",
   title: "Deploy",
   group: "2_deploy",
+  contextKinds: ["banner"],
   summary: DeploySummary,
-  useVisible: () => experimental_useThreadContextKind() === "banner",
 });
 ```
 

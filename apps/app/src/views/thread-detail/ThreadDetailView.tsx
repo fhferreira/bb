@@ -103,7 +103,7 @@ import { PluginThreadHeaderRows } from "@/components/plugin/PluginThreadHeaderRo
 import {
   CORE_THREAD_CONTEXT_CARD_ROWS,
   CORE_THREAD_CONTEXT_CARD_SECTIONS,
-} from "./ThreadContextCardCore";
+} from "@/lib/core-thread-context";
 import {
   ThreadContextCardHeaderButton,
   ThreadContextCardProvider,

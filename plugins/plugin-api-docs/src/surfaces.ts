@@ -334,7 +334,7 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
         bullets: [
           "Keep a pull request, change counts, or related threads in view while messages scroll",
           "Sit among bb's own rows and sections in the Info tab's groups, drawn with the same row and section",
-          "Hide a matching context segment while the pane shows the card",
+          "Keep a matching context segment to panes that show the banner",
           "Appear in thread panes on desktops and tablets, never on phones",
         ],
         apiSymbols: [

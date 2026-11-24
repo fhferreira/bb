@@ -142,6 +142,10 @@
       "type": "registry:lib"
     },
     {
+      "name": "info-list-row",
+      "type": "registry:ui"
+    },
+    {
       "name": "inline-rename",
       "type": "registry:ui"
     },

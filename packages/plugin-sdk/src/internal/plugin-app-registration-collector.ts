@@ -34,6 +34,7 @@ import type {
   PluginSettingsSectionRegistration,
   PluginSidebarFooterActionRegistration,
   PluginSourceCodeRendererRegistration,
+  ExperimentalThreadContextKind,
   ExperimentalThreadContextSegmentRegistration,
   ExperimentalThreadInfoRowRegistration,
   ExperimentalThreadRowMetadataRegistration,
@@ -374,6 +375,43 @@ function collectMessageActionSurfaces(
   return MESSAGE_ACTION_SURFACES.filter((surface) => value.includes(surface));
 }
 
+export type CollectedThreadContextSegmentRegistration = Omit<
+  ExperimentalThreadContextSegmentRegistration,
+  "contextKinds"
+> & {
+  contextKinds: readonly ExperimentalThreadContextKind[];
+};
+
+const THREAD_CONTEXT_KINDS: readonly ExperimentalThreadContextKind[] = [
+  "banner",
+  "card",
+];
+
+function isThreadContextKind(
+  value: unknown,
+): value is ExperimentalThreadContextKind {
+  return value === "banner" || value === "card";
+}
+
+function collectThreadContextKinds(
+  kind: string,
+  value: unknown,
+): readonly ExperimentalThreadContextKind[] {
+  if (value === undefined) return THREAD_CONTEXT_KINDS;
+  if (
+    !Array.isArray(value) ||
+    value.length === 0 ||
+    !value.every(isThreadContextKind)
+  ) {
+    throw new Error(
+      `${kind}: "contextKinds" must be a non-empty array of "banner" or "card", got ${JSON.stringify(value)}`,
+    );
+  }
+  return THREAD_CONTEXT_KINDS.filter((contextKind) =>
+    value.includes(contextKind),
+  );
+}
+
 export interface CollectedPluginAppRegistrations {
   homepageSections: PluginHomepageSectionRegistration[];
   settingsSections: PluginSettingsSectionRegistration[];
@@ -390,7 +428,7 @@ export interface CollectedPluginAppRegistrations {
   threadLists: PluginThreadListRegistration[];
   experimentalSidebarNavigations: CollectedSidebarNavigationRegistration[];
   threadHeaderActions: LegacyThreadHeaderActionRegistration[];
-  threadContextSegments: ExperimentalThreadContextSegmentRegistration[];
+  threadContextSegments: CollectedThreadContextSegmentRegistration[];
   threadInfoRows: ExperimentalThreadInfoRowRegistration[];
   threadRowMetadata: ExperimentalThreadRowMetadataRegistration<unknown>[];
   threadInfoSections: ExperimentalThreadInfoSectionRegistration[];
@@ -1118,6 +1156,10 @@ export function collectPluginAppRegistrations(
           summary: registration.summary,
           ...optionalComponent("action"),
           ...optionalComponent("details"),
+          contextKinds: collectThreadContextKinds(
+            kind,
+            registration.contextKinds,
+          ),
           ...(registration.useVisible !== undefined
             ? { useVisible: registration.useVisible }
             : {}),

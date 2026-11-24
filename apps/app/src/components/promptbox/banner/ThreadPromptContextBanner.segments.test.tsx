@@ -10,12 +10,13 @@ import { resetAllCrashedPluginSlotsForTest } from "@/components/plugin/PluginSlo
 import {
   ThreadContextCard,
   ThreadContextCardProvider,
-  type CoreThreadContextCardRow,
 } from "@/components/plugin/PluginThreadContextCard";
 import {
   removePluginSlotRegistrations,
   setPluginSlotRegistrations,
+  type PluginThreadContextCardRowSlot,
 } from "@/lib/plugin-slots";
+import { CORE_PLUGIN_ID } from "@bb/domain";
 import { makePluginRegistrationSet } from "@/test/fixtures/plugins";
 import {
   GIT_SEGMENT_FIXTURE_PLUGIN_ID,
@@ -103,6 +104,7 @@ function registerPluginSegment({
         {
           id: "status",
           title: "Demo status",
+          contextKinds: ["banner", "card"],
           group,
           summary,
           action: PluginAction,
@@ -114,8 +116,15 @@ function registerPluginSegment({
   );
 }
 
-const CARD_ROWS: CoreThreadContextCardRow[] = [
-  { id: "row", group: "thread", order: 10, component: () => null },
+const CARD_ROWS: PluginThreadContextCardRowSlot[] = [
+  {
+    pluginId: CORE_PLUGIN_ID,
+    generation: 0,
+    id: "row",
+    group: "thread",
+    order: 10,
+    component: () => null,
+  },
 ];
 
 interface BannerOptions {
@@ -252,6 +261,7 @@ function registerFocusSegment() {
         {
           id: "status",
           title: "Demo status",
+          contextKinds: ["banner", "card"],
           group: "2_pullRequest",
           summary: FocusSummary,
           details: FocusDetails,
@@ -296,6 +306,39 @@ describe("thread context segments", () => {
     ).toBeNull();
     expect(screen.getByText(/Plugin summary demo\/status/)).toBeTruthy();
   });
+
+  it.each([
+    { kind: "card" as const, shown: false },
+    { kind: "banner" as const, shown: true },
+  ])(
+    "places banner-only segments of every owner in a $kind pane",
+    ({ kind, shown }) => {
+      setPluginSlotRegistrations(
+        "demo",
+        makePluginRegistrationSet({
+          threadContextSegments: [
+            {
+              id: "status",
+              title: "Demo status",
+              group: "2_pullRequest",
+              contextKinds: ["banner"],
+              summary: PluginSummary,
+            },
+          ],
+        }),
+      );
+      renderBanner({ parent: true, git, threadContextKind: kind });
+
+      expect(screen.queryByText(/Plugin summary/) !== null).toBe(shown);
+      expect(
+        screen.queryByRole("button", { name: "Parent Plan the release" }) !==
+          null,
+      ).toBe(shown);
+      expect(
+        screen.queryByRole("button", { name: /Changed files/ }) !== null,
+      ).toBe(shown);
+    },
+  );
 
   it("orders core and plugin segments together and shares the visible list", () => {
     registerPluginSegment();
@@ -392,6 +435,7 @@ describe("thread context segments", () => {
           {
             id: "status",
             title: "Demo status",
+            contextKinds: ["banner", "card"],
             group: "2_pullRequest",
             summary: PluginSummary,
             useVisible: () => {
@@ -476,6 +520,15 @@ describe("thread context segments", () => {
     await press(summary);
     expect(screen.getByText("Plugin details")).toBeTruthy();
     expect(document.activeElement).toBe(summary);
+  });
+
+  it("applies the parent segment's context kinds to read-only history", () => {
+    renderBanner({ parent: true, archived: true, threadContextKind: "card" });
+
+    expect(screen.getByText("Thread is archived")).toBeTruthy();
+    expect(
+      screen.queryByRole("button", { name: "Parent Plan the release" }),
+    ).toBeNull();
   });
 
   it("keeps plugin segments off read-only history", () => {

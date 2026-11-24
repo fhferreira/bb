@@ -86,6 +86,7 @@ export default definePluginApp((app) => {
     title: "Changed files",
     group: experimental_THREAD_CONTEXT_SEGMENT_GROUPS.git,
     order: 10,
+    contextKinds: ["banner"],
     summary: changedFilesSegmentPart("summary"),
     action: changedFilesSegmentPart("action"),
     details: changedFilesSegmentPart("details"),

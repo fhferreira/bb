@@ -9,6 +9,8 @@ type CoreContributionKind =
   | "tabs"
   | "messageMetadata"
   | "threadContextSegments"
+  | "threadContextCardRows"
+  | "threadContextCardSections"
   | "threadActions"
   | "threadRailOutlines";
 

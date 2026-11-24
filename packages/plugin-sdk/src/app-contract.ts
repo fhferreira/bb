@@ -2130,6 +2130,16 @@ export interface ExperimentalThreadContextSegmentRegistration {
   /** Renders below the row; show content only while `isExpanded`. */
   details?: ComponentType<ExperimentalThreadContextSegmentProps>;
   /**
+   * The thread context kinds whose panes show the segment (see
+   * {@link PluginSdkApp.experimental_useThreadContextKind}). Omit for both.
+   * In a pane of another kind bb leaves the segment out and does not run
+   * `useVisible`. A segment whose content an
+   * `experimental_threadContextCardRow` or
+   * `experimental_threadContextCardSection` shows in `card` panes lists
+   * `["banner"]`, as bb's parent thread, Git and GitHub PR Status segments do.
+   */
+  contextKinds?: readonly ExperimentalThreadContextKind[];
+  /**
    * Runs in plugin scope for each thread; false hides the segment and leaves
    * it out of `segments`. Omit to always show.
    */
@@ -3738,6 +3748,12 @@ export interface ExperimentalPluginIconProps {
 export interface ExperimentalThreadTitleTextProps {
   title: string;
   className?: string;
+  /**
+   * True flows the title in the surrounding line of text, such as "Forked
+   * from <title>"; the default lays it out as its own row that shrinks its
+   * mention chips to fit.
+   */
+  inline?: boolean;
 }
 
 /**

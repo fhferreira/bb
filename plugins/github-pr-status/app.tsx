@@ -22,6 +22,7 @@ export default definePluginApp((app) => {
     title: "Pull request",
     group: CONTEXT_SEGMENT_GROUP,
     order: 10,
+    contextKinds: ["banner"],
     summary: PullRequestSegmentSummary,
     action: PullRequestSegmentAction,
     useVisible: usePullRequestSegmentVisible,

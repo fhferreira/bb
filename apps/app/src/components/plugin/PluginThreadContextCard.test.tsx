@@ -17,7 +17,10 @@ import { resetAllCrashedPluginSlotsForTest } from "@/components/plugin/PluginSlo
 import {
   removePluginSlotRegistrations,
   setPluginSlotRegistrations,
+  type PluginThreadContextCardRowSlot,
+  type PluginThreadContextCardSectionSlot,
 } from "@/lib/plugin-slots";
+import { CORE_PLUGIN_ID } from "@bb/domain";
 import { makePluginRegistrationSet } from "@/test/fixtures/plugins";
 import { ThreadContextCardRow } from "./ThreadContextCardRow";
 import { SurfaceInfoSection } from "./ThreadContextCardSection";
@@ -28,8 +31,6 @@ import {
   resolveThreadContextCardLayout,
   useThreadContextCardTranscriptCenteredMinWidth,
   WithoutThreadContextCard,
-  type CoreThreadContextCardRow,
-  type CoreThreadContextCardSection,
 } from "./PluginThreadContextCard";
 import { useThreadContextKind } from "./thread-context-card-pane";
 
@@ -83,8 +84,10 @@ function Crashes(): never {
   throw new Error("plugin crashed");
 }
 
-const CORE: CoreThreadContextCardRow[] = [
+const CORE: PluginThreadContextCardRowSlot[] = [
   {
+    pluginId: CORE_PLUGIN_ID,
+    generation: 0,
     id: "environment",
     group: "2_environment",
     order: 10,
@@ -92,8 +95,11 @@ const CORE: CoreThreadContextCardRow[] = [
   },
 ];
 
-const CORE_SECTIONS: CoreThreadContextCardSection[] = [
+const CORE_SECTIONS: PluginThreadContextCardSectionSlot[] = [
   {
+    pluginId: CORE_PLUGIN_ID,
+    generation: 0,
+    legacyTitle: null,
     id: "childThreads",
     group: "1_related",
     order: 10,
@@ -113,8 +119,8 @@ function renderPane({
   enabled?: boolean;
   paneWidth?: number;
   threadIds?: readonly string[];
-  coreRows?: readonly CoreThreadContextCardRow[];
-  coreSections?: readonly CoreThreadContextCardSection[];
+  coreRows?: readonly PluginThreadContextCardRowSlot[];
+  coreSections?: readonly PluginThreadContextCardSectionSlot[];
 } = {}) {
   vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(
     paneWidth,

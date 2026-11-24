@@ -4,7 +4,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type ComponentType,
   type ReactNode,
 } from "react";
 import { useAtom } from "jotai";
@@ -28,7 +27,6 @@ import {
 } from "@/lib/plugin-slots";
 import { createSyncedPreferenceAtom } from "@/lib/ui-preferences/synced-preference-atom";
 import { InfoSectionHeading } from "@/components/secondary-panel/info/info-list";
-import { CORE_PLUGIN_ID } from "@bb/domain";
 import { PluginSlotMount } from "./PluginSlotMount";
 import {
   ThreadContextCardPaneContext,
@@ -40,28 +38,6 @@ import {
   useThreadContextCardSectionCollapse,
 } from "./ThreadContextCardSection";
 import { threadContextSegmentKey } from "./PluginThreadContextSegments";
-
-export interface CoreThreadContextCardRow {
-  id: string;
-  group: string;
-  order: number;
-  component: ComponentType<ExperimentalThreadContextCardProps>;
-}
-
-export interface CoreThreadContextCardSection {
-  id: string;
-  group: string;
-  order: number;
-  component: ComponentType<ExperimentalThreadContextCardProps>;
-}
-
-type ThreadContextCardRowEntry =
-  | { owner: "core"; slot: CoreThreadContextCardRow }
-  | { owner: "plugin"; slot: PluginThreadContextCardRowSlot };
-
-type ThreadContextCardSectionEntry =
-  | { owner: "core"; slot: CoreThreadContextCardSection }
-  | { owner: "plugin"; slot: PluginThreadContextCardSectionSlot };
 
 export type ThreadContextCardLayout = "card" | "banner";
 
@@ -83,8 +59,8 @@ const pinnedAtom = createSyncedPreferenceAtom("threadContextCard.pinned");
 
 export interface ThreadContextCardPaneState {
   props: ExperimentalThreadContextCardProps;
-  rows: readonly ThreadContextCardRowEntry[];
-  sections: readonly ThreadContextCardSectionEntry[];
+  rows: readonly PluginThreadContextCardRowSlot[];
+  sections: readonly PluginThreadContextCardSectionSlot[];
   layout: ThreadContextCardLayout;
   setLayout(layout: ThreadContextCardLayout): void;
   popoverOpen: boolean;
@@ -95,19 +71,13 @@ export interface ThreadContextCardPaneState {
   setCardRevealedForThreadId(threadId: string | null): void;
 }
 
-function sortByPlacement<Item>(
+function sortByPlacement<Item extends GroupedPlacement>(
   items: readonly Item[],
-  placement: (item: Item) => GroupedPlacement,
 ): Item[] {
   return items
     .map((item, index) => ({ item, index }))
     .sort((left, right) =>
-      compareGroupedPlacement(
-        placement(left.item),
-        left.index,
-        placement(right.item),
-        right.index,
-      ),
+      compareGroupedPlacement(left.item, left.index, right.item, right.index),
     )
     .map(({ item }) => item);
 }
@@ -122,8 +92,8 @@ export function ThreadContextCardProvider({
   children,
 }: ExperimentalThreadContextCardProps & {
   enabled: boolean;
-  coreRows: readonly CoreThreadContextCardRow[];
-  coreSections: readonly CoreThreadContextCardSection[];
+  coreRows: readonly PluginThreadContextCardRowSlot[];
+  coreSections: readonly PluginThreadContextCardSectionSlot[];
   children: ReactNode;
 }) {
   const threadContextCardRows = usePluginSlotKind("threadContextCardRows");
@@ -145,29 +115,9 @@ export function ThreadContextCardProvider({
         projectId,
         environment: environmentId === null ? null : { id: environmentId },
       },
-      rows: enabled
-        ? sortByPlacement<ThreadContextCardRowEntry>(
-            [
-              ...coreRows.map((slot) => ({ owner: "core" as const, slot })),
-              ...threadContextCardRows.map((slot) => ({
-                owner: "plugin" as const,
-                slot,
-              })),
-            ],
-            (entry) => entry.slot,
-          )
-        : [],
+      rows: enabled ? sortByPlacement([...coreRows, ...threadContextCardRows]) : [],
       sections: enabled
-        ? sortByPlacement<ThreadContextCardSectionEntry>(
-            [
-              ...coreSections.map((slot) => ({ owner: "core" as const, slot })),
-              ...threadContextCardSections.map((slot) => ({
-                owner: "plugin" as const,
-                slot,
-              })),
-            ],
-            (entry) => entry.slot,
-          )
+        ? sortByPlacement([...coreSections, ...threadContextCardSections])
         : [],
       layout,
       setLayout,
@@ -321,20 +271,16 @@ function ThreadContextCardContent({
       {state.rows.length > 0 ? (
         <div data-thread-context-card-rows="" className={EMPTY_BLOCK_CLASS}>
           <div data-thread-context-card-body="" className="contents">
-            {state.rows.map((entry) => {
-              const Component = entry.slot.component;
-              if (entry.owner === "core") {
-                return <Component key={`core/${entry.slot.id}`} {...props} />;
-              }
-              const { pluginId, id, generation } = entry.slot;
+            {state.rows.map((slot) => {
+              const Component = slot.component;
               return (
                 <PluginSlotMount
-                  key={`${pluginId}/${id}/${generation}/${props.threadId}`}
-                  pluginId={pluginId}
+                  key={`${slot.pluginId}/${slot.id}/${slot.generation}/${props.threadId}`}
+                  pluginId={slot.pluginId}
                   slotKind="threadContextCardRow"
-                  slotId={id}
+                  slotId={slot.id}
                   instanceId={props.threadId}
-                  crashResetKey={String(generation)}
+                  crashResetKey={String(slot.generation)}
                   crashFallback={null}
                 >
                   <Component {...props} />
@@ -344,37 +290,24 @@ function ThreadContextCardContent({
           </div>
         </div>
       ) : null}
-      {state.sections.map((entry) => {
-        const Component = entry.slot.component;
-        const pluginId =
-          entry.owner === "core" ? CORE_PLUGIN_ID : entry.slot.pluginId;
+      {state.sections.map((slot) => {
+        const Component = slot.component;
         return (
           <ThreadContextCardSectionView
-            key={
-              entry.owner === "core"
-                ? `core/${entry.slot.id}`
-                : `${pluginId}/${entry.slot.id}/${entry.slot.generation}/${props.threadId}`
-            }
-            sectionKey={threadContextSegmentKey({
-              pluginId,
-              id: entry.slot.id,
-            })}
-            legacyTitle={entry.owner === "core" ? null : entry.slot.legacyTitle}
+            key={`${slot.pluginId}/${slot.id}/${slot.generation}/${props.threadId}`}
+            sectionKey={threadContextSegmentKey(slot)}
+            legacyTitle={slot.legacyTitle}
           >
-            {entry.owner === "core" ? (
+            <PluginSlotMount
+              pluginId={slot.pluginId}
+              slotKind="threadContextCardSection"
+              slotId={slot.id}
+              instanceId={props.threadId}
+              crashResetKey={String(slot.generation)}
+              crashFallback={null}
+            >
               <Component {...props} />
-            ) : (
-              <PluginSlotMount
-                pluginId={pluginId}
-                slotKind="threadContextCardSection"
-                slotId={entry.slot.id}
-                instanceId={props.threadId}
-                crashResetKey={String(entry.slot.generation)}
-                crashFallback={null}
-              >
-                <Component {...props} />
-              </PluginSlotMount>
-            )}
+            </PluginSlotMount>
           </ThreadContextCardSectionView>
         );
       })}
