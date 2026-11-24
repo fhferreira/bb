@@ -33,7 +33,7 @@ import {
 import {
   getFileNameFromPath,
   resolveRightPanelFileIconName,
-} from "./rightPanelFileVisuals";
+} from "@bb/shared-ui/right-panel-file-visuals";
 import {
   resolveTerminalHost,
   TerminalHostSelector,
@@ -564,7 +564,6 @@ function NewTabPanelStory({
         tabs={[panelTab]}
         fixedTabs={[]}
         isOpen
-        metadataContent={null}
         onCollapse={noop}
         onClose={noop}
         onTabReorder={noop}

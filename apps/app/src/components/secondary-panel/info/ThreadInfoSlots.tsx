@@ -1,67 +1,28 @@
-import type { ComponentType } from "react";
 import type { ExperimentalThreadInfoProps } from "@get-bb/plugin-sdk";
 import { PluginSlotMount } from "@/components/plugin/PluginSlotMount";
 import { compareGroupedPlacement } from "@/lib/grouped-placement";
-import { usePluginSlotKind } from "@/lib/plugin-slots";
+import { usePluginSlotKind, type PluginSlotSnapshot } from "@/lib/plugin-slots";
 import { InfoSectionCollapseIdContext } from "./useInfoSectionCollapse";
 
-export interface CoreThreadInfoRegistration {
-  id: string;
-  group: string;
-  order: number;
-  component: ComponentType<ExperimentalThreadInfoProps>;
-}
+type ThreadInfoRegistration =
+  | PluginSlotSnapshot["threadInfoRows"][number]
+  | PluginSlotSnapshot["threadInfoSections"][number];
 
-interface PluginThreadInfoRegistration {
-  id: string;
-  group: string;
-  order?: number;
-  component: ComponentType<ExperimentalThreadInfoProps>;
-  pluginId: string;
-  generation: number;
-}
-
-type ThreadInfoEntry =
-  | { owner: "core"; registration: CoreThreadInfoRegistration }
-  | { owner: "plugin"; registration: PluginThreadInfoRegistration };
-
-function sortThreadInfoEntries(
-  core: readonly CoreThreadInfoRegistration[],
-  plugin: readonly PluginThreadInfoRegistration[],
-): ThreadInfoEntry[] {
-  const entries: ThreadInfoEntry[] = [
-    ...core.map((registration) => ({ owner: "core" as const, registration })),
-    ...plugin.map((registration) => ({
-      owner: "plugin" as const,
-      registration,
-    })),
-  ];
+function sortThreadInfoEntries<Entry extends ThreadInfoRegistration>(
+  entries: readonly Entry[],
+): Entry[] {
   return entries
     .map((entry, index) => ({ entry, index }))
     .sort((left, right) =>
-      compareGroupedPlacement(
-        left.entry.registration,
-        left.index,
-        right.entry.registration,
-        right.index,
-      ),
+      compareGroupedPlacement(left.entry, left.index, right.entry, right.index),
     )
     .map(({ entry }) => entry);
 }
 
-interface ThreadInfoSlotsProps extends ExperimentalThreadInfoProps {
-  core: readonly CoreThreadInfoRegistration[];
-}
-
-export function ThreadInfoRows({ core, ...props }: ThreadInfoSlotsProps) {
+export function ThreadInfoRows(props: ExperimentalThreadInfoProps) {
   const threadInfoRows = usePluginSlotKind("threadInfoRows");
-  return sortThreadInfoEntries(core, threadInfoRows).map((entry) => {
-    const Component = entry.registration.component;
-    if (entry.owner === "core") {
-      return <Component key={`core/${entry.registration.id}`} {...props} />;
-    }
-    const { pluginId, id, generation } = entry.registration;
-    return (
+  return sortThreadInfoEntries(threadInfoRows).map(
+    ({ pluginId, id, generation, component: Component }) => (
       <PluginSlotMount
         key={`${pluginId}/${id}/${generation}/${props.threadId}`}
         pluginId={pluginId}
@@ -72,26 +33,14 @@ export function ThreadInfoRows({ core, ...props }: ThreadInfoSlotsProps) {
       >
         <Component {...props} />
       </PluginSlotMount>
-    );
-  });
+    ),
+  );
 }
 
-export function ThreadInfoSections({ core, ...props }: ThreadInfoSlotsProps) {
+export function ThreadInfoSections(props: ExperimentalThreadInfoProps) {
   const threadInfoSections = usePluginSlotKind("threadInfoSections");
-  return sortThreadInfoEntries(core, threadInfoSections).map((entry) => {
-    const Component = entry.registration.component;
-    if (entry.owner === "core") {
-      return (
-        <InfoSectionCollapseIdContext.Provider
-          key={`core/${entry.registration.id}`}
-          value={entry.registration.id}
-        >
-          <Component {...props} />
-        </InfoSectionCollapseIdContext.Provider>
-      );
-    }
-    const { pluginId, id, generation } = entry.registration;
-    return (
+  return sortThreadInfoEntries(threadInfoSections).map(
+    ({ pluginId, id, generation, component: Component }) => (
       <InfoSectionCollapseIdContext.Provider
         key={`${pluginId}/${id}/${generation}/${props.threadId}`}
         value={`${pluginId}/${id}`}
@@ -106,6 +55,6 @@ export function ThreadInfoSections({ core, ...props }: ThreadInfoSlotsProps) {
           <Component {...props} />
         </PluginSlotMount>
       </InfoSectionCollapseIdContext.Provider>
-    );
-  });
+    ),
+  );
 }

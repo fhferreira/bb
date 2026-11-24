@@ -155,6 +155,9 @@ export const experimental_FilePreview = runtimeComponent(
 export const experimental_InfoSection = runtimeComponent(
   "experimental_InfoSection",
 );
+export const experimental_ThreadInfo = runtimeComponent(
+  "experimental_ThreadInfo",
+);
 export const experimental_CollapsibleStackCard = runtimeComponent(
   "experimental_CollapsibleStackCard",
 );
@@ -266,6 +269,9 @@ export const experimental_matchesShortcutKey = runtimeFunction(
 export const experimental_sliceUtf16Head = runtimeFunction(
   "experimental_sliceUtf16Head",
 );
+export const experimental_searchPickerOptions = runtimeFunction(
+  "experimental_searchPickerOptions",
+);
 export const experimental_describePromptMention = runtimeFunction(
   "experimental_describePromptMention",
 );
@@ -287,6 +293,12 @@ export const useComposerView = runtimeFunction("useComposerView");
 // see docs/api_to_audit.md).
 export const experimental_useSidebarThreads = runtimeFunction(
   "experimental_useSidebarThreads",
+);
+export const experimental_useThreadStorageFiles = runtimeFunction(
+  "experimental_useThreadStorageFiles",
+);
+export const experimental_useEnvironment = runtimeFunction(
+  "experimental_useEnvironment",
 );
 export const experimental_useThread = runtimeFunction(
   "experimental_useThread",

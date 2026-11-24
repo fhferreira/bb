@@ -160,7 +160,7 @@ describe("Git plugin server", () => {
       metadata: {
         statusChange: {
           status: "idle" as const,
-          runtime: { displayStatus: "idle" as const },
+          runtime: { displayStatus: "idle" as const, failure: null },
           activity: {
             activeBackgroundAgentCount: 0,
             activeBackgroundCommandCount: 0,
@@ -513,7 +513,10 @@ describe("Git plugin Viewed marks", () => {
       },
     });
     if (options.coreMarks !== undefined) {
-      await fake.bb.storage.kv.set(VIEWED_MARKS_FROM_CORE_KEY, options.coreMarks);
+      await fake.bb.storage.kv.set(
+        VIEWED_MARKS_FROM_CORE_KEY,
+        options.coreMarks,
+      );
     }
     plugin(fake.bb);
     const call = (method: string, input: Record<string, unknown>) =>
@@ -527,10 +530,22 @@ describe("Git plugin Viewed marks", () => {
 
   it("keeps marks per environment and diff target", async () => {
     const { call, list } = await viewedHost();
-    await call("markViewed", { target: uncommitted, path: "b.ts", revision: "rev-b" });
-    await call("markViewed", { target: uncommitted, path: "a.ts", revision: "rev-1" });
+    await call("markViewed", {
+      target: uncommitted,
+      path: "b.ts",
+      revision: "rev-b",
+    });
+    await call("markViewed", {
+      target: uncommitted,
+      path: "a.ts",
+      revision: "rev-1",
+    });
     await expect(
-      call("markViewed", { target: uncommitted, path: "a.ts", revision: "rev-2" }),
+      call("markViewed", {
+        target: uncommitted,
+        path: "a.ts",
+        revision: "rev-2",
+      }),
     ).resolves.toEqual({ ok: true });
     await call("markViewed", {
       target: { type: "commit", sha: "ABCDEF1" },
@@ -544,7 +559,9 @@ describe("Git plugin Viewed marks", () => {
         { path: "b.ts", revision: "rev-b" },
       ],
     });
-    await expect(list(uncommitted, ["b.ts", "missing.ts", "b.ts"])).resolves.toEqual({
+    await expect(
+      list(uncommitted, ["b.ts", "missing.ts", "b.ts"]),
+    ).resolves.toEqual({
       files: [{ path: "b.ts", revision: "rev-b" }],
     });
     await expect(list(uncommitted, [])).resolves.toEqual({ files: [] });
@@ -613,7 +630,11 @@ describe("Git plugin Viewed marks", () => {
     fake.harness.experimental_watchRpc("viewed", {
       input: { environmentId: "env-1", target: uncommitted },
     });
-    await call("markViewed", { target: uncommitted, path: "a.ts", revision: "rev" });
+    await call("markViewed", {
+      target: uncommitted,
+      path: "a.ts",
+      revision: "rev",
+    });
     await vi.waitFor(() =>
       expect(fake.harness.experimental_rpcInvalidations).toContainEqual([
         gitViewedTag("env-1"),
